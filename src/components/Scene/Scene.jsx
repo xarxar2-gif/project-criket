@@ -279,6 +279,7 @@ function GarageRoom() {
     />
   )
 }
+useGLTF.clear(`${import.meta.env.BASE_URL}models/garageroom.glb`)
 useGLTF.preload(`${import.meta.env.BASE_URL}models/garageroom.glb`)
 
 export default function Scene() {
