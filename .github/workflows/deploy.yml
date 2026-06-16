@@ -21,9 +21,7 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-        working-directory: project-criket
       - run: npm run build
-        working-directory: project-criket
       - uses: actions/upload-pages-artifact@v3
         with:
           path: project-criket/dist
