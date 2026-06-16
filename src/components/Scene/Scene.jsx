@@ -38,45 +38,78 @@ const GROUP = {
 // camPath: world-space waypoints the camera follows (CatmullRom spline).
 // Tune the mid points for cinematic arcs; start/end are most important.
 // camLook: world-space point camera looks at throughout (defaults to item pos).
+// camPath    — world-space positions the camera travels through
+// camLookPath — world-space points the camera looks at (sampled at same progress)
+//               Omit to always look at the item's world position.
 const ITEMS = {
   journal: {
     pos: [-1.5,  2.82,  0.45], rot: [0,  0.28, 0],
+    // Hover directly above the journal looking straight down at the cover
     camPath: [
-      [ 0.0,  1.6,  2.8 ],   // rest
-      [-0.4,  1.2,  2.1 ],   // arc left, move forward
-      [-0.55, 0.75, 1.55],   // arrival — close-up above journal
+      [ 0.0,  1.6,  2.8 ],
+      [-0.5,  1.3,  1.9 ],
+      [-0.85, 0.95, 1.17],   // directly above journal
+    ],
+    camLookPath: [
+      [ 0.0,  0.38, -0.1],   // rest look
+      [-0.5,  0.4,   1.2],
+      [-0.85, 0.35,  1.17],  // look at journal surface
     ],
   },
   character: {
     pos: [-1.85, 2.82,  1.8], rot: [0, -0.18, 0],
+    // Hover above folder looking down
     camPath: [
       [ 0.0,  1.6,  2.8 ],
-      [-0.5,  1.3,  2.2 ],   // sweep further left
-      [-0.7,  0.85, 1.85],
+      [-0.55, 1.3,  2.1 ],
+      [-0.96, 0.97, 1.55],   // above character sheet
+    ],
+    camLookPath: [
+      [ 0.0,  0.38, -0.1],
+      [-0.55, 0.4,   1.4],
+      [-0.96, 0.47,  1.55],  // look down at folder
     ],
   },
   memories: {
     pos: [ 0.45, 2.95, -1.4], rot: [0, -1.5, 0],
+    // Slide in to face the laptop screen
     camPath: [
       [0.0,  1.6,  2.8 ],
-      [0.1,  1.1,  1.7 ],    // push forward, slight right
-      [0.15, 0.65, 1.05],    // close on laptop screen
+      [0.05, 1.0,  1.6 ],
+      [0.1,  0.55, 0.95],    // close, screen-level
+    ],
+    camLookPath: [
+      [0.0,  0.38, -0.1],
+      [0.0,  0.3,   1.0],
+      [-0.27, 0.21, 0.63],   // look at laptop screen
     ],
   },
   music: {
     pos: [ 3.6,  3.25,  0.65], rot: [0, -0.68, 0],
+    // Approach the radio front panel
     camPath: [
       [0.0,  1.6,  2.8 ],
-      [0.35, 1.2,  2.1 ],    // arc right
-      [0.5,  0.85, 1.6 ],    // face radio front panel
+      [0.4,  1.1,  2.1 ],
+      [0.55, 0.75, 1.55],    // in front of radio face
+    ],
+    camLookPath: [
+      [0.0,  0.38, -0.1],
+      [0.45, 0.4,   1.5],
+      [0.68, 0.49,  1.18],   // look at radio front
     ],
   },
   art: {
     pos: [-2.2,  6.4,  -0.6], rot: [0, Math.PI/2.5, 0],
+    // Glide left and level with the polaroids on the wall
     camPath: [
       [ 0.0,  1.6,  2.8],
-      [-0.5,  1.5,  1.8],    // glide left, maintain height
-      [-0.85, 1.3,  1.1],    // level with polaroids on wall
+      [-0.5,  1.45, 1.8],
+      [-0.9,  1.27, 1.05],   // eye-level with polaroids
+    ],
+    camLookPath: [
+      [ 0.0,  0.38, -0.1],
+      [-0.6,  1.1,   0.9],
+      [-1.06, 1.27,  0.54],  // look straight at wall
     ],
   },
 }
@@ -104,53 +137,54 @@ function CameraRig() {
   const tgtLook     = useRef(new Vector3())
   const fVec        = useRef(new Vector3())
   const activeItem_  = useRef(null)
-  const curCurve     = useRef(null)  // CatmullRomCurve3 for path-based items
-  const pathT        = useRef(0)     // 0→1 progress along the path
-  const lastPending  = useRef(null)  // guards against re-creating curve every frame
+  const curCurve     = useRef(null)  // CatmullRomCurve3 for camera position path
+  const curLookCurve = useRef(null)  // CatmullRomCurve3 for camera look-at path
+  const pathT        = useRef(0)     // 0→1 progress along both curves
+  const lastPending  = useRef(null)  // guards against re-creating curves every frame
 
-  useEffect(() => {
-    camera.position.copy(curPos.current)
-    camera.lookAt(curLook.current)
-  }, [camera])
 
   useFrame((_, delta) => {
     if (focusPos) {
-      // Build the curve only once when a new item is clicked
+      // Build curves only once when a new item is clicked
       if (pendingItem && pendingItem !== lastPending.current) {
         lastPending.current = pendingItem
         activeItem_.current = ITEMS[pendingItem] ?? null
-        const path = activeItem_.current?.camPath
-        if (path?.length >= 2) {
-          curCurve.current = new CatmullRomCurve3(path.map(p => new Vector3(...p)))
-          pathT.current = 0
-        } else {
-          curCurve.current = null
-        }
+        const cfg_ = activeItem_.current
+        pathT.current = 0
+        curCurve.current = cfg_?.camPath?.length >= 2
+          ? new CatmullRomCurve3(cfg_.camPath.map(p => new Vector3(...p)))
+          : null
+        curLookCurve.current = cfg_?.camLookPath?.length >= 2
+          ? new CatmullRomCurve3(cfg_.camLookPath.map(p => new Vector3(...p)))
+          : null
       }
 
       const cfg = activeItem_.current
       fVec.current.set(focusPos[0], focusPos[1], focusPos[2])
 
       if (curCurve.current) {
-        // Advance smoothly along the spline (eases in as it nears 1)
         pathT.current += (1 - pathT.current) * CAMERA.zoomIn * delta * 0.5
-        curCurve.current.getPoint(Math.min(pathT.current, 1), tgtPos.current)
+        const t = Math.min(pathT.current, 1)
+        curCurve.current.getPoint(t, tgtPos.current)
         curPos.current.copy(tgtPos.current)
+        // Look path: sampled at same t, or fall back to item world pos
+        if (curLookCurve.current) {
+          curLookCurve.current.getPoint(t, tgtLook.current)
+        } else {
+          tgtLook.current.copy(fVec.current)
+        }
       } else if (cfg?.camPos) {
         tgtPos.current.set(...cfg.camPos)
         curPos.current.lerp(tgtPos.current, CAMERA.zoomIn * delta)
+        tgtLook.current.set(...(cfg.camLook ?? focusPos))
       } else {
         tgtPos.current.copy(_restPos).lerp(fVec.current, cfg?.zoom ?? 0.68)
         curPos.current.lerp(tgtPos.current, CAMERA.zoomIn * delta)
-      }
-
-      if (cfg?.camLook) {
-        tgtLook.current.set(...cfg.camLook)
-      } else {
         tgtLook.current.copy(fVec.current)
       }
     } else {
       curCurve.current = null
+      curLookCurve.current = null
       pathT.current = 0
       lastPending.current = null
       tgtPos.current.copy(_restPos)

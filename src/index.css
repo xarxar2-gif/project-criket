@@ -461,6 +461,34 @@ html, body {
   gap: 20px;
 }
 
+/* ─── Loading screen ─────────────────────────────────────────────────────────── */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #060a0e;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 15vh;
+  pointer-events: none;
+}
+
+.loading-bar-track {
+  width: 180px;
+  height: 2px;
+  background: rgba(200, 121, 65, 0.15);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: #c87941;
+  border-radius: 1px;
+  width: 0%;
+}
+
 /* Outer container — establishes stacking context so backing anchors correctly */
 .journal-book-outer {
   position: relative;
