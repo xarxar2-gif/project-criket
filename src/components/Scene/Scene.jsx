@@ -126,7 +126,7 @@ function TimeLight() {
 }
 
 function GarageRoom() {
-  const { scene } = useGLTF('/models/garageroom.glb')
+  const { scene } = useGLTF(`${import.meta.env.BASE_URL}models/garageroom.glb`)
   useEffect(() => { roomSceneRef.current = scene }, [scene])
   return (
     <primitive
@@ -137,7 +137,7 @@ function GarageRoom() {
     />
   )
 }
-useGLTF.preload('/models/garageroom.glb')
+useGLTF.preload(`${import.meta.env.BASE_URL}models/garageroom.glb`)
 
 export default function Scene() {
   return (

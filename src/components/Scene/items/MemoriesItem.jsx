@@ -19,7 +19,7 @@ const FACE_NORMAL = MODEL_SCREEN_AXIS.clone().applyQuaternion(
 )
 
 function LaptopModel({ hovered }) {
-  const { scene, materials } = useGLTF('/models/asus_laptop.glb')
+  const { scene, materials } = useGLTF(`${import.meta.env.BASE_URL}models/asus_laptop.glb`)
   const matRef = useRef(null)
 
   useEffect(() => {
@@ -99,4 +99,4 @@ export default function MemoriesItem({ position, rotation = [0, 0, 0] }) {
   )
 }
 
-useGLTF.preload('/models/asus_laptop.glb')
+useGLTF.preload(`${import.meta.env.BASE_URL}models/asus_laptop.glb`)
